@@ -23,7 +23,6 @@ class NetModel(cv2.dnn_DetectionModel):
         self.classNamesPath:str = classNamesPath
         self.classNames:list = self.readClassNames()    
         self.classNamesLen:int = len(self.classNames)
-        print(self.classNamesLen    )
 
     def readClassNames(self) -> None:
         return open(self.classNamesPath, "rt", encoding="UTF-8").read().rstrip("\n").split("\n")
