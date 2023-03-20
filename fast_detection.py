@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+
 class WebCam(cv2.VideoCapture):
     def __init__(self, frameName:str = "test_frame"):
         super().__init__(1)
@@ -26,21 +27,21 @@ class NetModel(cv2.dnn_DetectionModel):
         self.classNamesLen:int = len(self.classNames)
         self.nmsUse = nmsUse
 
-    def readClassNames(self) -> None:
+    def readClassNames(self) -> list[str]:
         return open(self.classNamesPath, "rt", encoding="UTF-8").read().rstrip("\n").split("\n")
 
-
-    def getBoxesIDsNMS(self, bbox, confs) -> list:
+    def getBoxesIDsNMS(self, bbox, confs) -> list[int]:
         return cv2.dnn.NMSBoxes(list(bbox), list(map(float, list(np.array(confs).reshape(1,-1)[0]))), self.thres, self.nms_threshold)
 
-    def detectObjectsInImage(self, image) -> object:
-            classIds, confs, bbox = self.detect(image,confThreshold=self.thres)
-            #Shit code
-            bboxIDs = self.getBoxesIDsNMS(bbox, confs) if self.nmsUse else range(len(bbox))
+    def detectObjectsInImage(self, ImageCV) -> object:
+            classIds, confs, bbox = self.detect(ImageCV,confThreshold=self.thres)
+            bboxIDs:list = self.getBoxesIDsNMS(bbox, confs) if self.nmsUse else range(len(bbox))
             if len(classIds):
                 for classId, confidence,boxId in zip(classIds.flatten(),confs.flatten(),bboxIDs):
-                    cv2.rectangle(image,bbox[boxId],color=(0,255,0),thickness=2)
-                    cv2.putText(image,self.classNames[classId-1].upper(),(bbox[boxId][0]+10,bbox[boxId][1]+30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+                    cv2.rectangle(ImageCV,bbox[boxId],color=(0,255,0),thickness=2)
+                    cv2.putText(ImageCV,self.classNames[classId-1].upper(),(bbox[boxId][0]+10,bbox[boxId][1]+30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+            
+            return ImageCV
 
     def detectObjectsInWebCam(self, frameName:str, Webcam:WebCam) -> None:
         while True:
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     weightsPath = "frozen_inference_graph.pb"
     classIdsPath = "coco.names"
     net = NetModel(weightsPath, configPath, classIdsPath, thres=0.45, nmsUse=True)
-    cam = WebCam()
+    cam = WebCam("Testing NMS")
     net.readClassNames()
     net.detectObjectsInWebCam(cam.frameName, cam)
     
