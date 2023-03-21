@@ -4,7 +4,7 @@ import numpy as np
 
 class WebCam(cv2.VideoCapture):
     def __init__(self, frameName:str = "test_frame"):
-        super().__init__(1)
+        super().__init__(0)
         self.set(3,1280)
         self.set(4,720)
         self.set(10,70)    
@@ -26,20 +26,22 @@ class NetModel(cv2.dnn_DetectionModel):
         self.classNames:list = self.readClassNames()    
         self.classNamesLen:int = len(self.classNames)
         self.nmsUse = nmsUse
+        self.possiableIdList:list = range(self.classNamesLen)
 
     def readClassNames(self) -> list[str]:
-        return open(self.classNamesPath, "rt", encoding="UTF-8").read().rstrip("\n").split("\n")
+        return open(self.classNamesPath, "rt", encoding="UTF-8").read().upper().rstrip("\n").split("\n")
 
     def getBoxesIDsNMS(self, bbox, confs) -> list[int]:
         return cv2.dnn.NMSBoxes(list(bbox), list(map(float, list(np.array(confs).reshape(1,-1)[0]))), self.thres, self.nms_threshold)
 
     def detectObjectsInImage(self, ImageCV) -> object:
             classIds, confs, bbox = self.detect(ImageCV,confThreshold=self.thres)
-            bboxIDs:list = self.getBoxesIDsNMS(bbox, confs) if self.nmsUse else range(len(bbox))
+            bboxIDs:list = self.getBoxesIDsNMS(bbox, confs) if self.nmsUse else self.possiableIdList[:len(bbox)+1] 
             if len(classIds):
                 for classId, confidence,boxId in zip(classIds.flatten(),confs.flatten(),bboxIDs):
                     cv2.rectangle(ImageCV,bbox[boxId],color=(0,255,0),thickness=2)
-                    cv2.putText(ImageCV,self.classNames[classId-1].upper(),(bbox[boxId][0]+10,bbox[boxId][1]+30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+                    cv2.putText(ImageCV,self.classNames[classId-1],(bbox[boxId][0]+10,bbox[boxId][1]+30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+                    cv2.putText(ImageCV,str(confs[boxId]),(bbox[boxId][0]+10,bbox[boxId][1]+100),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
             
             return ImageCV
 
